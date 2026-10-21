@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# Flutter / Android
+app/.dart_tool/
+app/.flutter-plugins*
+app/.packages
+app/build/
+app/android/.gradle/
+app/android/local.properties
+app/android/app/upload-keystore.jks
+app/android/key.properties
+*.apk
+*.aab
+
+# IDE / sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Salidas locales
+dist/
+salida/
+descargas/
+*.part

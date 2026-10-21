@@ -1,0 +1,40 @@
+name: irodl_app
+description: >-
+  IroDL — Descargador de paquetes .irodl. Chunks de 2 MiB, tokens AES-256
+  descifrados localmente, MD5 verificado por chunk y global. Sin backend.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  crypto: ^3.0.5
+  pointycastle: ^3.9.1
+  file_picker: ^8.1.2
+  path_provider: ^2.1.4
+  share_plus: ^10.0.2
+  open_filex: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/icon.png
+
+# Icono de la app: se generan los mipmaps en CI con `dart run flutter_launcher_icons`
+flutter_launcher_icons:
+  android: true
+  ios: false
+  remove_alpha_ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#0B1220"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
