@@ -2,11 +2,26 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart' as crypto;
 import 'package:http/http.dart' as http;
+import 'package:pointycastle/export.dart';
 
 import 'crypto.dart';
 import 'format.dart';
+
+/// MD5 en streaming de un archivo (sin cargar el archivo completo en RAM).
+Future<String> md5OfFile(File f) async {
+  final d = MD5Digest();
+  await for (final block in f.openRead()) {
+    final u = block is Uint8List ? block : Uint8List.fromList(block);
+    d.update(u, 0, u.length);
+  }
+  final out = Uint8List(16);
+  d.doFinal(out, 0);
+  return out.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
+
+String _hexOf(Uint8List bytes) =>
+    bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
 /// Motor de descarga .irodl para la app.
 /// Mismo diseño que el original invertido: paralelo (4 conexiones),
@@ -145,8 +160,8 @@ class IrodlTask {
   Future<void> _downloadChunk(http.Client client, IrodlChunk c) async {
     final done = _doneFile(c);
     if (done.existsSync()) {
-      final digest = await crypto.md5.bind(done.openRead()).first;
-      if (digest.toString() == c.md5) {
+      final digest = await md5OfFile(done);
+      if (digest == c.md5) {
         _bytesDone += done.lengthSync();
         _report();
         return; // resume: chunk ya verificado
@@ -159,8 +174,8 @@ class IrodlTask {
       if (_cancelled) throw IrodlTaskException('cancelado');
       try {
         await _fetchOnce(client, c, part);
-        final digest = await crypto.md5.bind(part.openRead()).first;
-        if (digest.toString() != c.md5) {
+        final digest = await md5OfFile(part);
+        if (digest != c.md5) {
           throw IrodlTaskException('md5 del chunk no coincide');
         }
         part.renameSync(done.path);
@@ -236,8 +251,7 @@ class IrodlTask {
         '${destDir.path}${Platform.pathSeparator}${manifest.filename}';
     final tmp = File('$finalPath.rebuilding');
     final sink = tmp.openWrite();
-    final acc = crypto.AccumulatorSink<crypto.Digest>();
-    final md5Input = crypto.md5.startChunkedConversion(acc);
+    final digest = MD5Digest();
     var size = 0;
     try {
       for (final c in manifest.chunks) {
@@ -246,16 +260,18 @@ class IrodlTask {
           throw IrodlTaskException('falta el chunk ${c.name}');
         }
         await for (final block in f.openRead()) {
-          sink.add(block);
-          md5Input.add(block);
-          size += block.length;
+          final u = block is Uint8List ? block : Uint8List.fromList(block);
+          sink.add(u);
+          digest.update(u, 0, u.length);
+          size += u.length;
         }
       }
-      md5Input.close();
       await sink.flush();
       await sink.close();
     } catch (_) {
-      await sink.close();
+      try {
+        await sink.close();
+      } catch (_) {}
       if (tmp.existsSync()) tmp.deleteSync();
       rethrow;
     }
@@ -264,8 +280,9 @@ class IrodlTask {
       throw IrodlTaskException(
           'tamaño final $size ≠ manifiesto ${manifest.filesize}');
     }
-    final got = acc.events.first.toString();
-    if (got != manifest.md5) {
+    final out16 = Uint8List(16);
+    digest.doFinal(out16, 0);
+    if (_hexOf(out16) != manifest.md5) {
       if (tmp.existsSync()) tmp.deleteSync();
       throw IrodlTaskException('MD5 global no coincide con el manifiesto');
     }
