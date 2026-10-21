@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _pick() async {
     final res = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      extensions: ['irodl'],
+      allowedExtensions: ['irodl'],
       withData: true,
       dialogTitle: 'Selecciona un paquete .irodl',
     );

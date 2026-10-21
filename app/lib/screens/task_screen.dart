@@ -169,7 +169,7 @@ class _TaskScreenState extends State<TaskScreen> {
       );
     }
 
-    if (finished) {
+    if (_donePath != null) {
       final size = widget.completed?.size ??
           (_donePath != null ? File(_donePath!).lengthSync() : 0);
       return Center(
